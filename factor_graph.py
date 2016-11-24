@@ -65,80 +65,90 @@ Only thing to do is try it!
 Converting the cancer example to a factor graph..
 
 '''
-def get_args(func):
-    '''
-    return the names of the arguments
-    of a function as a list of strings.
-    This is so that we can omit certain
-    variables when we marginalize.
-    Note that functions created by make_product_func 
-    do not return an argspec ,so we add a argspec 
-    arrtibute at creation time
-    '''
-    if hasattr(func,'argspec'):
-        return func.argspec
-    return inspect.getargspec(func).args
+class Node(object):
+    
+     def is_leaf(self):
+        if not (self.parents and self.children):
+            return True
+        return False
 
+     def send_to(self, recipient, message):
+        print (message)
+        recipient.received_messages[self.name] = message
+
+class VariableNode(Node):
+    
+    def __init__(self, name, parents=[], children=[]):
+        self.name = name
+        self.parents = parents
+        self.children = children
+        self.received_messages = {}
+        self.sent_messages = {}
+        #self.current_value = 1
+
+    def __repr__(self):
+        return '<VariableNode: %s>' % self.name    
+
+class FactorNode(Node):
+
+    def __init__(self, name,func, parents=[], children=[]):
+        self.func = func
+        self.name = name
+        self.parents = parents
+        self.children = children
+        self.received_messages = {}
+        self.sent_messages = {}
+        #self.bindings = dict()
+
+
+    def make_sum(self, exclude_var):
+        '''
+        Sum of factors so far excludeing the
+        variable that this sum will be sent 
+        to. This needs to return a function
+        '''
+        args = [x for x in self.func_parameters if x!=exclude_var]
+        
+        for x in []:
+            pass
+        
+    def __repr__(self):
+        return '<FactorNode %s %s(%s)>' % \
+            (self.name,
+             self.func.__name__,
+             get_args(self.func))
+            
 class Message(object):
 
     def __init__(self, source,destination, func):
         self.source = source
         self.destination = destination
         self.func = func
+        self.argspec = get_args(self.func)
+    
+    def __call__(self , *args):
+        return self.func(*args)
+        
     def __repr__(self):
         return ('<Message from %s -> %s:%s(%s)>'
                 %(self.source,self.destination,
                   self.func,get_args(self.func)))
 
-    
-
-
-def make_product_func(factors):
+class MessageProduct(object):
     '''
-    Return a single callable from
-    a list of factors which correctly
-    applies the arguments to each 
-    individual factor
+    represents a product of messages
+    that a variable node sends to a factor node
     '''
-    args_map = {}
-    all_args = []
-    for factor in factors:
-        print('\n',factors,'-----',factor,'\n')
-        args_map[factor] = get_args(factor)
-        all_args += args_map[factor]
-
-    # Now we need to make a callable that
-    # will take all the arguments and correctly
-    # apply them to each factor...
-    args = list(set(all_args))
-    #args.sort()
-    args_list = expand_parameters(args,[True,False])
-    def product_func(*args):
-        return factors
-    product_func.argspec = args
-    return product_func
+    def __init__(self , source ,destination , messages):
+        self.source = source
+        self.destination = destination
+        self.messages = messages
         
-def make_not_sum(exclude_var,product_func):
-    '''
-    Given the variable to exclude from
-    the summation and a product_func we create
-    a function that marginalizes over all other 
-    variables and return it as a new callable.
-    '''
-    args = set(get_args(product_func))
-    args = list(args.difference(set([exclude_var])))
-    args_list = expand_parameters(args,[True,False])
-    def sum_func(exclude_var):
-        summands = []
-        for bindings in args_list:
-            summands.append((bindings,product_func))
-        return summands
-    sum_func.argspec = [exclude_var]
-    return sum_func
-    
-
-    
-
+    def __repr__(self):
+         return '<MessageProduct: %s -> %s %s>' % (
+            self.source.name,
+            self.destination.name,
+            self.messages)
 
 def make_factor_node_message(node, target_node):
     '''
@@ -155,6 +165,10 @@ def make_factor_node_message(node, target_node):
     >>> target_node.name = 'x2'
     >>> make_factor_node_message(node, target_node)
     '''
+    if node.is_leaf():
+        message = Message(node , target_node , node.func)
+        return message
+        
     args = set(get_args(node.func))
     
     # Compile list of factors for message
@@ -184,64 +198,112 @@ def make_factor_node_message(node, target_node):
     message = Message(node ,target_node , sum_func)
     return message
 
-def make_unity(args):
-    def unity(x):
-        return 1
-    unity.argspec = args
-    return unity
-
 def make_variable_node_message(node , target_node):
     '''
-    The rules for a variable node are:
-        pass on the product of all
-        neighbours including iteself,but excluding
-        the destination node.If this is a leaf node then
-        send the unity function.
+     To construct the message from 
+    a variable node to a factor
+    node we take the product of
+    all messages received from
+    neighbours except for any
+    message received from the target.
+    If the source node is a leaf node
+    then send the unity function.
     '''
-    factors = [make_unity(['dummy'])]
+    if node.is_leaf():
+        unity_func = make_unity([node.name])
+        message = Message(node , target_node , unity_func)
+        return message
+    factors = []
     neighbours = node.children + node.parents
     #print(neighbours)
     for neighbour in neighbours:
         if neighbour == target_node:
             continue
         #print(neighbour.func.__name__)
-        factors.append(node.received_messages[neighbour.func.__name__])
+        factors.append(node.received_messages[neighbour.name])
     
     product_func = make_product_func(factors)
     message = Message(node,target_node,product_func)
     return message
 
-class FactorNode(object):
+def get_args(func):
+    '''
+    Return the names of the arguments
+    of a function as a list of strings.
+    This is so that we can omit certain
+    variables when we marginalize.
+    Note that functions created by
+    make_product_func do not return
+    an argspec, so we add a argspec
+    attribute at creation time.
+    '''
+    if hasattr(func, 'argspec'):
+        return func.argspec
+    return inspect.getargspec(func).args
 
-    def __init__(self, name,func, parents=[], children=[]):
-        self.func = func
-        self.name = name
-        self.parents = parents
-        self.children = children
-        self.received_messages = {}
-        self.sent_messages = {}
-        #self.bindings = dict()
 
-    def send_to(self, recipient,message):
-        recipient.received_messages[self.func.__name__]=message
-        
+def make_product_func(factors):
+    '''
+    Return a single callable from
+    a list of factors which correctly
+    applies the arguments to each 
+    individual factor
+    '''
+    args_map = {}
+    all_args = []
+    for factor in factors:
+        print('\n',factors,'-----',factor,'\n')
+        args_map[factor] = get_args(factor)
+        all_args += args_map[factor]
 
-    def make_sum(self, exclude_var):
-        '''
-        Sum of factors so far excludeing the
-        variable that this sum will be sent 
-        to. This needs to return a function
-        '''
-        args = [x for x in self.func_parameters if x!=exclude_var]
+    # Now we need to make a callable that
+    # will take all the arguments and correctly
+    # apply them to each factor...
+    args = list(set(all_args))
+    #args.sort()
+    args_list = expand_parameters(args,[True,False])
+    def product_func(*args):
+        result = 1
+        for factor in factors:
+            result *=factor(args)
+        return result
+    product_func.argspec = args
+    product_func.factors = factors
+    return product_func
         
-        for x in []:
-            pass
-        
-    def __repr__(self):
-        return '<FactorNode %s %s(%s)>' % \
-            (self.name,
-             self.func.__name__,
-             get_args(self.func))
+def make_not_sum(exclude_var,product_func):
+    '''
+    Given the variable to exclude from
+    the summation and a product_func we create
+    a function that marginalizes over all other 
+    variables and return it as a new callable.
+    '''
+    args = set(get_args(product_func))
+    args = list(args.difference(set([exclude_var])))
+    args_list = expand_parameters(args,[True,False])
+    def not_sum_func(exclude_var):
+        summands = []
+        for bindings in args_list:
+            summands.append((bindings,product_func))
+        return summands
+    not_sum_func.argspec = product_func.argspec
+    not_sum_func.exclude_var = exclude_var
+    not_sum_func.factors = product_func.factors
+    return not_sum_func
+    
+
+    
+
+
+
+
+def make_unity(args):
+    def unity(x):
+        return 1
+    unity.argspec = args
+    return unity
+
+
 
 
 def expand_parameters(args, vals):
@@ -262,23 +324,6 @@ def expand_parameters(args, vals):
         result.append([False] + r)
     return result
 
-
-
-class VariableNode(object):
-    
-    def __init__(self, name, parents=[], children=[]):
-        self.name = name
-        self.parents = parents
-        self.children = children
-        self.received_messages = {}
-        self.sent_messages = {}
-        #self.current_value = 1
-
-    def send_to(self, recipient,message):
-        recipient.received_messages[self.name]=message
-
-    def __repr__(self):
-        return '<VariableNode: %s>' % self.name
 
 def pollution_func(P):
     if P == True:
@@ -368,7 +413,7 @@ if __name__ == '__main__':
     xray_var.children = []
     dyspnoea_var.children = []
 
-    # Now set the children for the factor nodes...
+    # Now se5t the children for the factor nodes...
     pollution_fac.children = [pollution_var]
     smoker_fac.children = [smoker_var]
     cancer_fac.children = [cancer_var]
@@ -382,6 +427,7 @@ if __name__ == '__main__':
     # Step 1 
     # fP -> P
     message = make_factor_node_message(pollution_fac, pollution_var)
+    print('\n',message,'\n')
     pollution_fac.send_to(pollution_var, message)
 
     # fS -> S
@@ -420,22 +466,15 @@ if __name__ == '__main__':
     dyspnoea_fac.send_to(cancer_var, message)
 
     message = make_factor_node_message(xray_fac, cancer_var)
-    xray_fac.send_tp(cancer_var, message)
+    xray_fac.send_to(cancer_var, message)
 
     pprint(cancer_fac.received_messages)
     pprint(cancer_var.received_messages)
 
     # ----------- end of step 2
 
-    sys.exit(0)
-    xray_var.send_to(xray_fac)
-    dyspnoea_var.send_to(dyspnoea_fac)
-    #import ipdb; ipdb.set_trace()
-    # ----------- end of step 1
-
-    # Step 2
-    smoker_var.send_to(cancer_fac)
-    pollution_var.send_to(cancer_fac)
+   
+  
     
     #xray_fac.send_to(cancer_var, 
     
