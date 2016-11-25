@@ -252,7 +252,7 @@ def make_product_func(factors):
     args_map = {}
     all_args = []
     for factor in factors:
-        print('\n',factors,'-----',factor,'\n')
+        #print('\n',factors,'-----',factor,'\n')
         args_map[factor] = get_args(factor)
         all_args += args_map[factor]
 
@@ -427,7 +427,7 @@ if __name__ == '__main__':
     # Step 1 
     # fP -> P
     message = make_factor_node_message(pollution_fac, pollution_var)
-    print('\n',message,'\n')
+    #print('\n',message,'\n')
     pollution_fac.send_to(pollution_var, message)
 
     # fS -> S
