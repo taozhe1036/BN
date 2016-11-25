@@ -124,17 +124,18 @@ if __name__ == '__main__':
     x5.send_to(fE_node, message)
 
     from pprint import pprint
-    pprint(x1.received_messages)
-    pprint(x2.received_messages)
-    pprint(fD_node.received_messages)
-    pprint(fE_node.received_messages)
+    #pprint(x1.received_messages)
+    #pprint(x2.received_messages)
+    #pprint(fD_node.received_messages)
+    #pprint(fE_node.received_messages)
 
     print ('End of Step 1.')
     print ('----------------------------------------------------------------------')
 
     # ----------- end of step 1
 
-
+    print('Step 2')
+    
     # Step 2
     # x1 already has a message so it just passes that along since
     # apart from the destination it has no other neighbours
@@ -152,11 +153,11 @@ if __name__ == '__main__':
     # Now 
     message = make_factor_node_message(fE_node, x3)
     fE_node.send_to(x3, message)
-    print ('At fC_node:')
-    pprint(fC_node.received_messages)
+#    print ('At fC_node:')
+ #   pprint(fC_node.received_messages)
 
-    print ('At x3 node:')
-    pprint(x3.received_messages)
+  #  print ('At x3 node:')
+   # pprint(x3.received_messages)
 
     print ('End of Step 2.')
     print ('----------------------------------------------------------------------')
@@ -174,11 +175,11 @@ if __name__ == '__main__':
     message = make_variable_node_message(x3, fC_node)
     x3.send_to(fC_node, message)
 
-    print ('At x3 node:')
-    pprint(x3.received_messages)
+#    print ('At x3 node:')
+ #   pprint(x3.received_messages)
     
-    print ('At fC_node:')
-    pprint(fC_node.received_messages)
+  #  print ('At fC_node:')
+   # pprint(fC_node.received_messages)
 
 
     print ('End of Step 3.')
@@ -260,3 +261,13 @@ if __name__ == '__main__':
 
     print ('End of Step 5.')
     print ('----------------------------------------------------------------------')
+    print ('Messages at all nodes:')
+    for node in [x1, x2, x3, x4, x5, fA_node, fB_node, fC_node, fD_node, fE_node]:
+        node.message_report()
+
+    print ('-----------------------------------------------------------------------')
+    print ('Marginals')
+    print ('-----------------------------------------------------------------------')
+    for node in [x1, x2, x3, x4, x5]:
+        for value in [True, False]:
+            print (node.name, value, node.marginal(value))
