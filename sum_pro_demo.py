@@ -106,8 +106,8 @@ if __name__ == '__main__':
 
     # Step 1 
     # fA -> x1
-    print 'Step 1'
-    import ipdb; ipdb.set_trace()
+    print ('Step 1')
+#    import ipdb; ipdb.set_trace()
     message = make_factor_node_message(fA_node, x1)
     fA_node.send_to(x1, message)
 
@@ -129,8 +129,8 @@ if __name__ == '__main__':
     pprint(fD_node.received_messages)
     pprint(fE_node.received_messages)
 
-    print 'End of Step 1.'
-    print '----------------------------------------------------------------------'
+    print ('End of Step 1.')
+    print ('----------------------------------------------------------------------')
 
     # ----------- end of step 1
 
@@ -152,20 +152,20 @@ if __name__ == '__main__':
     # Now 
     message = make_factor_node_message(fE_node, x3)
     fE_node.send_to(x3, message)
-    print 'At fC_node:'
+    print ('At fC_node:')
     pprint(fC_node.received_messages)
 
-    print 'At x3 node:'
+    print ('At x3 node:')
     pprint(x3.received_messages)
 
-    print 'End of Step 2.'
-    print '----------------------------------------------------------------------'
+    print ('End of Step 2.')
+    print ('----------------------------------------------------------------------')
 
     # ----------- end of step 2
 
 
     # Step 3
-    print 'Step 3'
+    print ('Step 3')
 
 
     message = make_factor_node_message(fC_node, x3)
@@ -174,20 +174,20 @@ if __name__ == '__main__':
     message = make_variable_node_message(x3, fC_node)
     x3.send_to(fC_node, message)
 
-    print 'At x3 node:'
+    print ('At x3 node:')
     pprint(x3.received_messages)
     
-    print 'At fC_node:'
+    print ('At fC_node:')
     pprint(fC_node.received_messages)
 
 
-    print 'End of Step 3.'
-    print '-----------------------------------------------------------------------'
+    print ('End of Step 3.')
+    print ('----------------------------------------------------------------------')
 
 
 
     # Step 4
-    print 'Step 4'
+    print ('Step 4')
 
     ###### To make it easiser to see I will print the messages as I go along
 
@@ -220,12 +220,12 @@ if __name__ == '__main__':
     #pprint(fE_node.received_messages)
 
 
-    print 'End of Step 4.'
-    print '-----------------------------------------------------------------------'
+    print ('End of Step 4.')
+    print ('----------------------------------------------------------------------')
 
 
     # Step 5
-    print 'Step 5'
+    print ('Step 5')
 
 
 
@@ -258,5 +258,5 @@ if __name__ == '__main__':
     
 
 
-    print 'End of Step 5.'
-    print '-----------------------------------------------------------------------'
+    print ('End of Step 5.')
+    print ('----------------------------------------------------------------------')
